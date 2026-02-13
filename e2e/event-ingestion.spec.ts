@@ -116,4 +116,29 @@ test.describe("Event Ingestion Flow", () => {
       page.getByRole("heading", { name: "signup", level: 3 })
     ).toBeVisible();
   });
+
+  test("API validation: invalid email returns 400", async ({ request }) => {
+    const response = await request.post("/api/events", {
+      data: {
+        email: "invalid-email",
+        type: "test_event",
+      },
+    });
+
+    expect(response.status()).toBe(400);
+    const body = await response.json();
+    expect(body.error).toBe("Invalid email format");
+  });
+
+  test("API validation: missing event type returns 400", async ({ request }) => {
+    const response = await request.post("/api/events", {
+      data: {
+        email: "test@example.com",
+      },
+    });
+
+    expect(response.status()).toBe(400);
+    const body = await response.json();
+    expect(body.error).toBe("Event type is required");
+  });
 });
