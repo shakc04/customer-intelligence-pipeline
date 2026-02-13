@@ -415,8 +415,8 @@ For automatic formatting on save, add to `.vscode/settings.json`:
 ## Author
 
 Sakthiabinav Chandramohan  
-Computer Science Student @UMD 
-GitHub: https://github.com/shakc04  
+Computer Science Student @UMD
+GitHub: https://github.com/shakc04
 
 ## License
 

@@ -96,11 +96,14 @@ export default async function CustomersPage() {
                       {customer._count.events !== 1 ? "s" : ""}
                     </td>
                     <td className="px-6 py-5 text-sm text-slate-600 dark:text-slate-300">
-                      {new Date(customer.createdAt).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
+                      {new Date(customer.createdAt).toLocaleDateString(
+                        "en-US",
+                        {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        }
+                      )}
                     </td>
                     <td className="px-6 py-5 text-right">
                       <Link

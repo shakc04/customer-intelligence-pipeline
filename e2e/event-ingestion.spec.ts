@@ -18,23 +18,21 @@ test.describe("Event Ingestion Flow", () => {
     // Step 2: Fill out the form
     await page.getByLabel("Customer Email *").fill(testEmail);
     await page.getByLabel("Event Type *").fill(eventType);
-    await page
-      .getByLabel("Properties (JSON)")
-      .fill(JSON.stringify(properties));
+    await page.getByLabel("Properties (JSON)").fill(JSON.stringify(properties));
 
     // Step 3: Submit the form
     await page.getByRole("button", { name: "Submit Event" }).click();
 
     // Step 4: Wait for success message
-    await expect(
-      page.getByText(/Event created successfully/)
-    ).toBeVisible();
+    await expect(page.getByText(/Event created successfully/)).toBeVisible();
 
     // Step 5: Click "View customer timeline" link
     await page.getByRole("link", { name: /View customer timeline/ }).click();
 
     // Step 6: Verify we're on the customer timeline page
-    await expect(page.getByRole("heading", { name: testEmail, level: 1 })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: testEmail, level: 1 })
+    ).toBeVisible();
     await expect(page.getByText("1 event tracked")).toBeVisible();
 
     // Step 7: Verify the event appears in the timeline
@@ -64,9 +62,7 @@ test.describe("Event Ingestion Flow", () => {
 
     // Step 3: Submit first time
     await page.getByRole("button", { name: "Submit Event" }).click();
-    await expect(
-      page.getByText(/Event created successfully/)
-    ).toBeVisible();
+    await expect(page.getByText(/Event created successfully/)).toBeVisible();
 
     // Step 4: Submit same event again (form was reset, so refill)
     await page.getByLabel("Customer Email *").fill(testEmail);
@@ -96,9 +92,7 @@ test.describe("Event Ingestion Flow", () => {
     await page.getByLabel("Customer Email *").fill(testEmail);
     await page.getByLabel("Event Type *").fill("signup");
     await page.getByRole("button", { name: "Submit Event" }).click();
-    await expect(
-      page.getByText(/Event created successfully/)
-    ).toBeVisible();
+    await expect(page.getByText(/Event created successfully/)).toBeVisible();
 
     // Step 2: Navigate to customers list
     await page.goto("/customers");
@@ -115,7 +109,9 @@ test.describe("Event Ingestion Flow", () => {
     await customerRow.getByRole("link", { name: /View Timeline/ }).click();
 
     // Step 5: Verify timeline page
-    await expect(page.getByRole("heading", { name: testEmail, level: 1 })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: testEmail, level: 1 })
+    ).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "signup", level: 3 })
     ).toBeVisible();

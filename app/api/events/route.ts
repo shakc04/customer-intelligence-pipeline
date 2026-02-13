@@ -20,7 +20,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
-    if (!body.type || typeof body.type !== "string" || body.type.trim() === "") {
+    if (
+      !body.type ||
+      typeof body.type !== "string" ||
+      body.type.trim() === ""
+    ) {
       return NextResponse.json(
         { error: "Event type is required" },
         { status: 400 }

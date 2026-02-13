@@ -52,7 +52,8 @@ export default async function CustomerTimelinePage({
             {customer.email}
           </h1>
           <p className="text-slate-600 dark:text-slate-300">
-            {customer.events.length} event{customer.events.length !== 1 ? "s" : ""} tracked
+            {customer.events.length} event
+            {customer.events.length !== 1 ? "s" : ""} tracked
           </p>
         </div>
 
@@ -123,7 +124,9 @@ export default async function CustomerTimelinePage({
                     {event.idempotencyKey && (
                       <div>
                         <span className="font-medium">Idempotency Key:</span>{" "}
-                        <span className="font-mono">{event.idempotencyKey}</span>
+                        <span className="font-mono">
+                          {event.idempotencyKey}
+                        </span>
                       </div>
                     )}
                   </div>
