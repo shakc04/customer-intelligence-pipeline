@@ -35,5 +35,6 @@ model Event {
   @@unique([customerId, idempotencyKey])
   @@index([customerId])
   @@index([occurredAt])
+  @@index([type, occurredAt])
   @@map("events")
 }

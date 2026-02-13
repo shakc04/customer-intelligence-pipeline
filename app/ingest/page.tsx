@@ -73,7 +73,7 @@ export default function IngestPage() {
           message: data.error || "Failed to create event",
         });
       }
-    } catch (error) {
+    } catch {
       setResult({
         success: false,
         message: "Network error. Please try again.",
