@@ -130,7 +130,9 @@ test.describe("Event Ingestion Flow", () => {
     expect(body.error).toBe("Invalid email format");
   });
 
-  test("API validation: missing event type returns 400", async ({ request }) => {
+  test("API validation: missing event type returns 400", async ({
+    request,
+  }) => {
     const response = await request.post("/api/events", {
       data: {
         email: "test@example.com",
