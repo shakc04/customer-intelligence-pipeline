@@ -64,6 +64,24 @@ jobs:
     name: E2E Tests
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: testdb
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/testdb
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -81,6 +99,12 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm exec prisma generate
+
+      - name: Push database schema
+        run: pnpm exec prisma db push --accept-data-loss
 
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps
