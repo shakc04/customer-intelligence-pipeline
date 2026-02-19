@@ -13,7 +13,7 @@
     "test:watch": "jest --watch",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:integration": "jest --testPathPattern='__tests__/integration'"
+    "test:integration": "jest --config jest.integration.config.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.2",
