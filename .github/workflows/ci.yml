@@ -106,6 +106,9 @@ jobs:
       - name: Push database schema
         run: pnpm exec prisma db push --accept-data-loss
 
+      - name: Run integration tests
+        run: pnpm run test:integration
+
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps
 

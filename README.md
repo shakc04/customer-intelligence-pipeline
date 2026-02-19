@@ -4,14 +4,16 @@ A production-ready event ingestion and customer profiling system built with Next
 
 ## Overview
 
-This application implements a complete **Events → Profiles → Segments** pipeline for tracking and targeting customer behavior:
+This application implements a complete **Events → Profiles → Segments → Campaigns** pipeline for tracking and targeting customer behavior:
 
 - **Event Ingestion**: RESTful API endpoint (`POST /api/events`) accepts first-party events with properties and timestamps
-- **Idempotent Processing**: Database-level composite unique constraint (`customerId` + `idempotencyKey`) prevents duplicate event ingestion
+- **Idempotent Processing**: Database-level composite unique constraints prevent duplicate event ingestion and duplicate sends
 - **Customer Upsert**: Automatically creates or updates customer profiles by email
 - **Timeline View**: Browse all customers and view their complete event history sorted chronologically
 - **Audience Segments**: Define rule-based segments evaluated against live event data, with real-time preview of matching customers
 - **Smart Generate**: Natural language → segment definition helper (mock by default, pluggable for any LLM provider)
+- **Campaigns**: Target a segment, auto-generate personalised email drafts per customer (Smart Draft), approve drafts, and simulate sends
+- **Smart Draft**: Template-based email copy generator (mock by default, pluggable for any LLM provider)
 
 Built with modern TypeScript patterns, comprehensive test coverage, and production-ready architecture.
 
@@ -197,10 +199,11 @@ pnpm format:check # Check formatting (CI)
 ### Testing
 
 ```bash
-pnpm test         # Run Jest unit tests
-pnpm test:watch   # Run Jest in watch mode
-pnpm test:e2e     # Run Playwright e2e tests (requires dev server)
-pnpm test:e2e:ui  # Run Playwright with interactive UI
+pnpm test              # Run Jest unit tests
+pnpm test:watch        # Run Jest in watch mode
+pnpm test:integration  # Run DB integration tests (requires DATABASE_URL)
+pnpm test:e2e          # Run Playwright e2e tests (requires dev server)
+pnpm test:e2e:ui       # Run Playwright with interactive UI
 ```
 
 ### Database
@@ -227,8 +230,20 @@ customer-intelligence-pipeline/
 │   │   │       ├── route.ts               # GET /api/segments/[id]
 │   │   │       └── preview/
 │   │   │           └── route.ts           # GET /api/segments/[id]/preview
-│   │   └── smart-generate/segment/
-│   │       └── route.ts                   # POST /api/smart-generate/segment
+│   │   ├── smart-generate/segment/
+│   │   │   └── route.ts                   # POST /api/smart-generate/segment
+│   │   ├── smart-draft/email/
+│   │   │   └── route.ts                   # POST /api/smart-draft/email
+│   │   └── campaigns/
+│   │       ├── route.ts                   # POST /api/campaigns, GET /api/campaigns
+│   │       └── [id]/
+│   │           ├── route.ts               # GET /api/campaigns/[id]
+│   │           ├── generate-drafts/
+│   │           │   └── route.ts           # POST /api/campaigns/[id]/generate-drafts
+│   │           ├── drafts/[draftId]/
+│   │           │   └── route.ts           # PATCH /api/campaigns/[id]/drafts/[draftId]
+│   │           └── send/
+│   │               └── route.ts           # POST /api/campaigns/[id]/send
 │   ├── ingest/
 │   │   └── page.tsx                       # Event ingestion form
 │   ├── customers/
@@ -238,6 +253,10 @@ customer-intelligence-pipeline/
 │   │   ├── page.tsx                       # Segment list
 │   │   ├── new/page.tsx                   # Create segment (+ Smart Generate)
 │   │   └── [id]/page.tsx                  # Segment detail + preview
+│   ├── campaigns/
+│   │   ├── page.tsx                       # Campaign list
+│   │   ├── new/page.tsx                   # Create campaign (segment picker)
+│   │   └── [id]/page.tsx                  # Campaign detail (drafts + send)
 │   ├── layout.tsx                         # Root layout
 │   ├── page.tsx                           # Landing page
 │   └── globals.css                        # Global styles
@@ -246,19 +265,29 @@ customer-intelligence-pipeline/
 │   │   ├── utils.test.ts                  # Email validation tests
 │   │   ├── event-validation.test.ts       # Event validation tests
 │   │   ├── segments.test.ts               # Segment definition validation tests
-│   │   └── smartGenerate.test.ts          # Smart Generate mock parsing tests
+│   │   ├── smartGenerate.test.ts          # Smart Generate mock parsing tests
+│   │   ├── campaignUtils.test.ts          # extractRecommendedSku / extractRecentEventType
+│   │   ├── smartDraft.test.ts             # Smart Draft mock provider tests
+│   │   └── integration/
+│   │       └── campaigns.integration.test.ts  # DB-backed campaign CRUD tests
 │   ├── smartGenerate/
 │   │   ├── types.ts                       # SmartGenerateProvider interface
 │   │   ├── mock.ts                        # Keyword-based mock provider
 │   │   └── client.ts                      # Provider registry + export
+│   ├── smartDraft/
+│   │   ├── types.ts                       # SmartDraftProvider interface
+│   │   ├── mock.ts                        # Template-based mock provider
+│   │   └── client.ts                      # Provider registry + export
 │   ├── prisma.ts                          # Prisma client singleton
 │   ├── segments.ts                        # SegmentDefinition types + validation
 │   ├── segmentPreview.ts                  # Segment evaluation logic
+│   ├── campaignUtils.ts                   # extractRecommendedSku / extractRecentEventType
 │   └── utils.ts                           # Utility functions
 ├── e2e/
 │   ├── home.spec.ts                       # Landing page tests
 │   ├── event-ingestion.spec.ts            # Event flow tests
-│   └── segments.spec.ts                   # Segment flow tests
+│   ├── segments.spec.ts                   # Segment flow tests
+│   └── campaigns.spec.ts                  # Campaign flow tests
 ├── prisma/
 │   └── schema.prisma                      # Database schema
 ├── .github/workflows/
@@ -459,6 +488,89 @@ Evaluate a segment against live event data. Returns up to 50 matching customers.
 
 ---
 
+### POST /api/campaigns
+
+Create a new campaign targeting a segment. Snapshots the segment definition at creation time.
+
+**Request Body**:
+
+```json
+{
+  "name": "Cart Re-engagement",
+  "description": "Optional description",
+  "segmentId": "uuid"
+}
+```
+
+**Response** (201 Created):
+
+```json
+{ "campaignId": "uuid" }
+```
+
+---
+
+### POST /api/campaigns/[id]/generate-drafts
+
+Evaluate the campaign's segment snapshot, then generate and upsert a personalised email draft for each matching customer. Idempotent — safe to call multiple times.
+
+**Response**:
+
+```json
+{ "draftedCount": 12 }
+```
+
+---
+
+### PATCH /api/campaigns/[id]/drafts/[draftId]
+
+Transition a draft's status. Only `generated → approved` or `generated → rejected` transitions are permitted.
+
+**Request Body**:
+
+```json
+{ "status": "approved" }
+```
+
+---
+
+### POST /api/campaigns/[id]/send
+
+Simulate sending emails for all `approved` drafts. Upserts Send records and advances campaign status to `sent`.
+
+**Response**:
+
+```json
+{ "sentCount": 10, "failedCount": 0 }
+```
+
+---
+
+### POST /api/smart-draft/email
+
+Generate an email subject + body for a given customer context.
+
+**Request Body**:
+
+```json
+{
+  "customerEmail": "alice@example.com",
+  "recentEventType": "added_to_cart",
+  "recommendedSku": "WIDGET-42"
+}
+```
+
+**Response**:
+
+```json
+{
+  "subject": "Still thinking about WIDGET-42?",
+  "body": "Hi alice,\n\nWe noticed you added to cart..."
+}
+```
+
+---
+
 ### POST /api/smart-generate/segment
 
 Generate a segment definition from a natural language prompt.
@@ -599,6 +711,58 @@ Navigate to **http://localhost:3000/segments** to see all segments, their descri
 
 ---
 
+## Demo: How to Use Campaigns
+
+### Step 1 — Create a campaign
+
+Navigate to **http://localhost:3000/campaigns/new**:
+
+- **Campaign Name**: `Cart Re-engagement`
+- **Target Segment**: select any existing segment
+- Click **Create Campaign**
+
+### Step 2 — Generate drafts
+
+On the campaign detail page, click **Generate Drafts**. The system:
+
+- Evaluates the segment snapshot against live events
+- Generates a personalised email subject + body for each matching customer
+- Displays all drafts with status `generated`
+
+### Step 3 — Review and approve drafts
+
+Click **Approve** on each draft you want to send. Approved drafts show a green badge.
+
+### Step 4 — Send
+
+Click **Send Approved (N)**. The system simulates sending to all approved customers and updates the campaign status to `sent`.
+
+---
+
+## Smart Draft
+
+The Smart Draft feature generates personalised email copy per customer. It is **fully optional** and works out of the box with no API keys.
+
+**Architecture**: A provider interface (`SmartDraftProvider`) with a default template-based mock. To plug in a real LLM:
+
+```typescript
+import { setSmartDraftProvider } from "@/lib/smartDraft/client";
+import { MyOpenAIProvider } from "./openai";
+
+setSmartDraftProvider(new MyOpenAIProvider());
+```
+
+**Mock template logic**:
+
+| Input            | Output subject                        |
+| ---------------- | ------------------------------------- |
+| SKU + event type | `"Still thinking about {sku}?"`       |
+| SKU only         | `"Still thinking about {sku}?"`       |
+| Event type only  | `"We have something special for you"` |
+| No context       | `"We have something special for you"` |
+
+---
+
 ## Testing
 
 ### Unit Tests
@@ -607,14 +771,24 @@ Navigate to **http://localhost:3000/segments** to see all segments, their descri
 pnpm test
 ```
 
-**Coverage** (40 tests across 4 suites):
+**Coverage** (56 tests across 6 suites):
 
 - Email validation and normalization (`utils.test.ts`)
 - Event field validation (`event-validation.test.ts`)
 - Segment definition validation — all 3 rule kinds, all error cases (`segments.test.ts`)
 - Smart Generate mock parsing — 7 prompt scenarios (`smartGenerate.test.ts`)
+- Campaign utilities — `extractRecommendedSku`, `extractRecentEventType` (`campaignUtils.test.ts`)
+- Smart Draft mock provider — all 4 copy branches, edge cases (`smartDraft.test.ts`)
 
-All validation logic is tested independently of the API layer.
+All validation and pure-function logic is tested independently of the API layer.
+
+**Integration Tests** (requires `DATABASE_URL`):
+
+```bash
+pnpm test:integration
+```
+
+Covers campaign CRUD, draft upsert idempotency, status transitions, and Send record upsert — all against a real Postgres database.
 
 ### E2E Tests
 
@@ -626,7 +800,7 @@ pnpm dev
 pnpm test:e2e
 ```
 
-**Coverage** (28 tests across 3 spec files, Chromium + Firefox):
+**Coverage** (42 tests across 4 spec files, Chromium + Firefox):
 
 - `home.spec.ts`: Landing page smoke tests
 - `event-ingestion.spec.ts`: Full ingestion flow, idempotency, API validation
@@ -636,6 +810,14 @@ pnpm test:e2e
   - Smart Generate fills the form
   - `event_count_gte` segment: verifies only frequent users match
   - API validation (missing name, invalid definition)
+- `campaigns.spec.ts`:
+  - Full happy-path: create → generate drafts → approve → send → status is `sent`
+  - Campaign list page
+  - Empty segment (0 drafts)
+  - PATCH draft: valid approved transition
+  - PATCH draft: invalid status returns 400
+  - API validation (missing segmentId)
+  - Smart Draft email endpoint
 
 Tests run on Chromium and Firefox (WebKit disabled for macOS ARM compatibility).
 
@@ -646,8 +828,8 @@ Tests run on Chromium and Firefox (WebKit disabled for macOS ARM compatibility).
 GitHub Actions workflow runs on every push and pull request:
 
 1. **Lint**: ESLint + Prettier checks
-2. **Unit Tests**: Jest tests
-3. **E2E Tests**: Playwright tests (headless)
+2. **Unit Tests**: Jest tests (no DB required)
+3. **E2E Tests**: Integration tests (DB) + Playwright tests (headless, real Postgres container)
 
 See [`.github/workflows/ci.yml`](.github/workflows/ci.yml) for configuration.
 

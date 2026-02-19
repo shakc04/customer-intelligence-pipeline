@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
@@ -68,7 +70,10 @@ export default function Home() {
           </div>
 
           {/* Segmentation */}
-          <div className="rounded-lg border border-slate-200 bg-white p-8 shadow-sm transition-shadow hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
+          <Link
+            href="/segments"
+            className="rounded-lg border border-slate-200 bg-white p-8 shadow-sm transition-shadow hover:shadow-md dark:border-slate-800 dark:bg-slate-900 block"
+          >
             <div className="mb-4 inline-block rounded-lg bg-purple-100 p-3 dark:bg-purple-900/30">
               <svg
                 className="h-6 w-6 text-purple-600 dark:text-purple-400"
@@ -91,10 +96,13 @@ export default function Home() {
               Create dynamic segments based on behavior, demographics, and
               custom attributes for precise targeting.
             </p>
-          </div>
+          </Link>
 
           {/* Campaigns */}
-          <div className="rounded-lg border border-slate-200 bg-white p-8 shadow-sm transition-shadow hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
+          <Link
+            href="/campaigns"
+            className="rounded-lg border border-slate-200 bg-white p-8 shadow-sm transition-shadow hover:shadow-md dark:border-slate-800 dark:bg-slate-900 block"
+          >
             <div className="mb-4 inline-block rounded-lg bg-orange-100 p-3 dark:bg-orange-900/30">
               <svg
                 className="h-6 w-6 text-orange-600 dark:text-orange-400"
@@ -117,7 +125,7 @@ export default function Home() {
               Schedule and simulate multi-channel campaigns with advanced
               targeting and performance analytics.
             </p>
-          </div>
+          </Link>
         </div>
       </main>
     </div>

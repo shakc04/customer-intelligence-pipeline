@@ -18,7 +18,12 @@ const config: Config = {
     "**/__tests__/**/*.test.[jt]s?(x)",
     "**/?(*.)+(spec|test).[jt]s?(x)",
   ],
-  testPathIgnorePatterns: ["/node_modules/", "/e2e/", "/.next/"],
+  testPathIgnorePatterns: [
+    "/node_modules/",
+    "/e2e/",
+    "/.next/",
+    "/__tests__/integration/",
+  ],
   collectCoverageFrom: [
     "app/**/*.{js,jsx,ts,tsx}",
     "lib/**/*.{js,jsx,ts,tsx}",
