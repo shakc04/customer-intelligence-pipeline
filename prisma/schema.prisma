@@ -38,3 +38,15 @@ model Event {
   @@index([type, occurredAt])
   @@map("events")
 }
+
+model Segment {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  description String?
+  definition  Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([name])
+  @@map("segments")
+}
